@@ -3,6 +3,8 @@ import cgi
 import urllib.parse
 import io
 
+from .response import decode_data
+
 class Request:
     def __init__(self, environ) -> None:
         self.environ = environ
@@ -13,7 +15,10 @@ class Request:
         self.form_data = {}
         self.json = {}
         self.files = {}
+        self.cookies = {}
+        self.user = {}
         self._parse_all_params()
+        self._parse_cookies()
 
     def __repr__(self) -> str:
         return f"""
@@ -26,9 +31,14 @@ class Request:
         files: {self.files}
         """
         
+    def _parse_cookies(self):
+        cookie_str = self.environ.get('HTTP_COOKIE', '')
+        cookies = [c.split('=', 1) for c in cookie_str.split(';') if '=' in c]
+        self.cookies = {k.strip(): v.strip() for k, v in cookies}
+        
     def _parse_all_params(self):
         query_str = self.environ.get('QUERY_STRING', '')
-        self.query_params = urllib.parse.parse_qsl(query_str)
+        self.query_params = dict(urllib.parse.parse_qsl(query_str))
         content_length_str = self.environ.get('CONTENT_LENGTH', '0')
         content_length = int(content_length_str) if content_length_str else 0
         

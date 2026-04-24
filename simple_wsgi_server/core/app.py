@@ -2,7 +2,7 @@ from typing import Any, Callable
 from .router import Router
 from .request import Request
 from .log import logger
-from .middlewares import log_middleware, exception_middleware
+from .middlewares import log_middleware, exception_middleware, cors_middleware, auth_middleware
 
 from wsgiref.simple_server import make_server
 
@@ -16,7 +16,6 @@ class WsgiApp:
     def _create_app(self):
         def wsgi_app(environ, start_response):
             request = Request(environ=environ)
-            logger.debug(f"异常中间件")
             # logger.debug(f"请求参数：{request.__repr__()}")
             response_body = self.router.handle(request)
             
@@ -26,7 +25,7 @@ class WsgiApp:
             
             return [response_body]
         
-        return log_middleware(exception_middleware(wsgi_app))
+        return exception_middleware(cors_middleware(auth_middleware(log_middleware(wsgi_app))))
         
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         app = self._create_app()

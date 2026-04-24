@@ -1,12 +1,12 @@
 import logging
 
 from logging.handlers import TimedRotatingFileHandler
-from .env import LOG_PATH
+from ..env import LOG_PATH
 
 def setup_logger():
     logger = logging.getLogger('wsgi app')
     logger.setLevel(logging.DEBUG)
-    # logging.handlers.clear()
+    logger.handlers.clear()
     
     formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H-%M-%S")
     

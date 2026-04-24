@@ -7,3 +7,7 @@ class BusinessException(Exception):
 class ParamsException(BusinessException):
     def __init__(self, msg: str = '参数错误') -> None:
         super().__init__(400, msg)
+        
+class UnauthorizedException(BusinessException):
+    def __init__(self, msg: str = '请先登录') -> None:
+        super().__init__(401, msg)

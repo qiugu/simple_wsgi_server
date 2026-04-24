@@ -36,28 +36,31 @@ class UserModel:
                 return { k: v for k, v in user.items() if k != 'password' }
         return None
     
-    def update_user(self, userid: int, username: str, nickname: str):
-        user = self.get_by_userid(userid)
+    @classmethod
+    def update_user(cls, userid: int, username: str, nickname: str):
+        user = cls.get_by_userid(userid)
         
         if user:
             user_copy = user.copy()
             user_copy['username'] = username
             user_copy['nickname'] = nickname
             
-            return { k: v for k, v in user_copy if k != 'password' }
+            return { k: user_copy[k] for k in user_copy if k != 'password' }
         return None
             
-    
-    def delete_user(self, userid: int):
-        user = self.get_by_userid(userid)
+    @classmethod
+    def delete_user(cls, userid: int):
+        user = cls.get_by_userid(userid)
         
         if user:
-            self._user_db.remove(user)
-        return None
+            cls._user_db.remove(user)
+            return True
+        return False
     
-    def list_users(self, limit: int, offset: int):
-        total = len(self._user_db)
+    @classmethod
+    def list_users(cls, limit: int, offset: int):
+        total = len(cls._user_db)
         return {
-            'list': self._user_db[offset:offset+limit],
+            'list': cls._user_db[offset:offset+limit],
             'total': total
         }
