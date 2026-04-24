@@ -15,3 +15,13 @@ PUBLIC_URLS = [
     '/api/login',
     '/api/register'
 ]
+
+# jwt配置
+JWT_SECRET_KEY = 'please-set-your-secrets'
+JWT_ALGORITHM = 'HS256'
+JWT_ACCESS_EXPIRE = 30 # 令牌访问有效期为30分钟
+JWT_REFERSH_EXPIRE = 7 * 24 # 刷新令牌有效期为7天
+
+# cookie的key设置
+ACCESS_COOKIE = 'access_token'
+REFRESH_COOKIE = 'refresh_token'

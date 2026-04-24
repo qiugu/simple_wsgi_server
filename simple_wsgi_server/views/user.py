@@ -1,7 +1,6 @@
 from ..core.request import Request
 from ..curds.user import UserService
 from ..core.response import make_response
-from ..utils.session import create_session
 
 class UserView:
     @staticmethod
@@ -14,8 +13,8 @@ class UserView:
         
         login_user = UserService.login(username, password)
         if login_user:
-            (user, session_id) = login_user
-            request.environ['session_id'] = session_id
+            (user, access_token, refresh_token) = login_user
+            request.environ['tokens'] = (access_token, refresh_token)
             return make_response(200, '登录成功', user)
         return make_response(400, '账号或密码错误')
     
@@ -23,7 +22,7 @@ class UserView:
     def register(request: Request):
         username = request.form_data.get('username', '')
         password = request.form_data.get('password', '')
-        nickname = request.form_data.get('nickname', '')
+        role = request.form_data.get('role', '')
         repeat_password = request.form_data.get('repeat_password', '')
         
         if not username or not password:
@@ -32,7 +31,7 @@ class UserView:
         if password != repeat_password:
             return make_response(400, "两次输入的密码不一致")
         
-        register_user = UserService.register(username, password, repeat_password, nickname)
+        register_user = UserService.register(username, password, role)
         if register_user:
             return make_response(200, "注册成功", register_user)
         return make_response(400, "用户名已存在")
@@ -40,13 +39,13 @@ class UserView:
     @staticmethod
     def update(request: Request):
         username = request.form_data.get('username', '')
-        nickname = request.form_data.get('nickname', '')
+        role = request.form_data.get('role', '')
         userid = request.path_params.get('id', '')
         
         if userid == '':
             return make_response(400, '用户id不存在')
         
-        new_user = UserService.update_user(int(userid), username, nickname)
+        new_user = UserService.update_user(int(userid), username, role)
         if new_user:
             return make_response(200, '用户更新成功', new_user)
         return make_response(400, '用户更新失败')

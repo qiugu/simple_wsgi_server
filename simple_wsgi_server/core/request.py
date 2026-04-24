@@ -4,6 +4,7 @@ import urllib.parse
 import io
 
 from .response import decode_data
+from ..env import ACCESS_COOKIE
 
 class Request:
     def __init__(self, environ) -> None:
@@ -35,6 +36,14 @@ class Request:
         cookie_str = self.environ.get('HTTP_COOKIE', '')
         cookies = [c.split('=', 1) for c in cookie_str.split(';') if '=' in c]
         self.cookies = {k.strip(): v.strip() for k, v in cookies}
+        
+    def get_token(self):
+        # 优先从请求头获取token
+        auth_header = self.environ.get('HTTP_AUTHORIZATION', '')
+        if auth_header:
+            if auth_header.startswith('Bearer '):
+                return auth_header.split(' ')[1]
+        return self.cookies.get(ACCESS_COOKIE)
         
     def _parse_all_params(self):
         query_str = self.environ.get('QUERY_STRING', '')

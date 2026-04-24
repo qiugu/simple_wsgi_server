@@ -5,8 +5,8 @@ from .exceptions import BusinessException, UnauthorizedException
 from .request import Request
 from .log import logger
 from .response import make_response
-from ..env import CORS_CONFIGS, PUBLIC_URLS, SESSION_KEY, SESSION_EXPIRE_HOURS
-from ..utils.session import get_session
+from ..env import CORS_CONFIGS, PUBLIC_URLS, ACCESS_COOKIE, REFRESH_COOKIE, JWT_ACCESS_EXPIRE, JWT_REFERSH_EXPIRE
+from ..utils.token import verify_token
 
 def auth_middleware(func):
     def wrapper(environ, start_response):
@@ -15,12 +15,15 @@ def auth_middleware(func):
         if req.path in PUBLIC_URLS or req.method == 'OPTIONS':
             environ['request_obj'] = req
             return func(environ, start_response)
-        session_id = req.cookies.get(SESSION_KEY, '')
-        session = get_session(session_id)
+        token = req.get_token()
         
-        if not session:
+        if not token:
             raise UnauthorizedException()
-        req.user = session['user']
+        payload = verify_token(token)
+        if not payload:
+            raise UnauthorizedException()
+        
+        req.user = payload
         environ['request_obj'] = req
         
         return func(environ, start_response)
@@ -47,14 +50,22 @@ def cors_middleware(func):
         def new_start_response(status, headers):
             headers.extend(cors_res_headers)
             
-            session_id = environ.get('session_id')
+            tokens = environ.get('tokens')
             
-            if session_id:
+            if tokens:
+                (access_token, refresh_token) = tokens
                 headers.extend(
-                    [(
-                        f"Set-Cookie",
-                        f"{SESSION_KEY}={session_id}; HttpOnly; Path=/; Max-Age={SESSION_EXPIRE_HOURS*3600}"
-                    )])
+                    [
+                        (
+                            f"Set-Cookie",
+                            f"{ACCESS_COOKIE}={access_token}; HttpOnly; Path=/; Max-Age={JWT_ACCESS_EXPIRE*60}"
+                        ),
+                        (
+                            f"Set-Cookie",
+                            f"{REFRESH_COOKIE}={refresh_token}; HttpOnly; Path=/; Max-Age={JWT_REFERSH_EXPIRE*60}"
+                        )
+                    ]
+                )
             return start_response(status, headers)
         
         return func(environ, new_start_response)

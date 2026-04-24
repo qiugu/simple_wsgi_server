@@ -1,7 +1,7 @@
 from ..models.user import UserModel
 from ..core.validator import ParameterValidate
 from ..utils.password import hash_password, verify_password
-from ..utils.session import create_session
+from ..utils.token import create_user_tokens
 
 class UserService:
     @staticmethod
@@ -10,27 +10,26 @@ class UserService:
         
         if login_user:
             if verify_password(password, login_user['password']):
-                session_id = create_session(login_user)
+                access_token, refresh_token = create_user_tokens(login_user)
                 out_login_user = { k: v for k, v in login_user.items() if k != 'password' }
-                return out_login_user, session_id
+                return out_login_user, access_token, refresh_token
             else:
                 return None
         else:
             return None
         
     @staticmethod
-    def register(username: str, password: str, repeat_password: str, nickname: str):
+    def register(username: str, password: str, role: str):
         # 校验规则（企业级标准）
         rules = {
             "username": {"required": True, "type": str, "min_len": 3, "max_len": 20},
             "password": {"required": True, "type": str, "min_len": 6, "max_len": 20},
-            "repeat_password": {"required": True, "type": str, "min_len": 6, "max_len": 20},
             "nickname": {"required": False, "type": str, "min_len": 2, "max_len": 20}
         }
         ParameterValidate.validate(locals(), rules)
         
         hash_pass = hash_password(password)
-        register_user = UserModel.register(username, hash_pass, nickname)
+        register_user = UserModel.register(username, hash_pass, role)
         
         if register_user:
             return register_user
@@ -56,8 +55,8 @@ class UserService:
         }
     
     @staticmethod
-    def update_user(userid: int, username: str, nickname: str):
-        new_user = UserModel.update_user(userid, username, nickname)
+    def update_user(userid: int, username: str, role: str):
+        new_user = UserModel.update_user(userid, username, role)
         
         if not new_user:
             return None

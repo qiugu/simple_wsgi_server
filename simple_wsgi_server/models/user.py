@@ -11,7 +11,7 @@ class UserModel:
         return next((u for u in cls._user_db if u['user_id'] == userid), None)
     
     @classmethod
-    def register(cls, username: str, password: str, nickname: str):
+    def register(cls, username: str, password: str, role: str):
         exist_user = cls.get_by_username(username)
         
         if exist_user:
@@ -20,7 +20,7 @@ class UserModel:
         user = {
             'user_id': cls._id_counter,
             'username': username,
-            'nickname': nickname,
+            'role': role,
             'password': password
         }
         cls._user_db.append(user)
@@ -37,13 +37,13 @@ class UserModel:
         return None
     
     @classmethod
-    def update_user(cls, userid: int, username: str, nickname: str):
+    def update_user(cls, userid: int, username: str, role: str):
         user = cls.get_by_userid(userid)
         
         if user:
             user_copy = user.copy()
             user_copy['username'] = username
-            user_copy['nickname'] = nickname
+            user_copy['role'] = role
             
             return { k: user_copy[k] for k in user_copy if k != 'password' }
         return None

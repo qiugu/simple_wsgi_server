@@ -11,3 +11,7 @@ class ParamsException(BusinessException):
 class UnauthorizedException(BusinessException):
     def __init__(self, msg: str = '请先登录') -> None:
         super().__init__(401, msg)
+        
+class PermissionDeniedError(BusinessException):
+    def __init__(self, msg: str = '权限不足，无法访问该接口') -> None:
+        super().__init__(403, msg)
