@@ -1,6 +1,8 @@
 from ..core.request import Request
 from ..curds.user import UserService
 from ..core.response import make_response
+from ..utils.decorators import permission_required
+from ..env import ROLE_ADMIN
 
 class UserView:
     @staticmethod
@@ -37,6 +39,7 @@ class UserView:
         return make_response(400, "用户名已存在")
     
     @staticmethod
+    @permission_required([ROLE_ADMIN])
     def update(request: Request):
         username = request.form_data.get('username', '')
         role = request.form_data.get('role', '')

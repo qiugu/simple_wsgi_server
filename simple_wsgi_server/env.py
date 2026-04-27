@@ -25,3 +25,7 @@ JWT_REFERSH_EXPIRE = 7 * 24 # 刷新令牌有效期为7天
 # cookie的key设置
 ACCESS_COOKIE = 'access_token'
 REFRESH_COOKIE = 'refresh_token'
+
+# 角色设置
+ROLE_ADMIN = 'admin'
+ROLE_USER = 'user'

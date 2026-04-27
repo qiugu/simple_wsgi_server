@@ -1,6 +1,8 @@
 import time
 import json
 
+from typing import Callable
+
 from .exceptions import BusinessException, UnauthorizedException
 from .request import Request
 from .log import logger
@@ -8,12 +10,11 @@ from .response import make_response
 from ..env import CORS_CONFIGS, PUBLIC_URLS, ACCESS_COOKIE, REFRESH_COOKIE, JWT_ACCESS_EXPIRE, JWT_REFERSH_EXPIRE
 from ..utils.token import verify_token
 
-def auth_middleware(func):
+def auth_middleware(func: Callable):
     def wrapper(environ, start_response):
-        req = Request(environ)
+        req = environ['req_obj']
         # 预见请求或者公共路由跳过鉴权
         if req.path in PUBLIC_URLS or req.method == 'OPTIONS':
-            environ['request_obj'] = req
             return func(environ, start_response)
         token = req.get_token()
         
@@ -24,7 +25,6 @@ def auth_middleware(func):
             raise UnauthorizedException()
         
         req.user = payload
-        environ['request_obj'] = req
         
         return func(environ, start_response)
     return wrapper
@@ -49,45 +49,53 @@ def cors_middleware(func):
         # 合并原有的响应头
         def new_start_response(status, headers):
             headers.extend(cors_res_headers)
-            
-            tokens = environ.get('tokens')
-            
-            if tokens:
-                (access_token, refresh_token) = tokens
-                headers.extend(
-                    [
-                        (
-                            f"Set-Cookie",
-                            f"{ACCESS_COOKIE}={access_token}; HttpOnly; Path=/; Max-Age={JWT_ACCESS_EXPIRE*60}"
-                        ),
-                        (
-                            f"Set-Cookie",
-                            f"{REFRESH_COOKIE}={refresh_token}; HttpOnly; Path=/; Max-Age={JWT_REFERSH_EXPIRE*60}"
-                        )
-                    ]
-                )
             return start_response(status, headers)
         
         return func(environ, new_start_response)
     return wrapper
 
 def exception_middleware(func):
-    def wrapper(environ, start_response) -> bytes:
+    def wrapper(environ, start_response):
         try:
-            resp = func(environ, start_response)
-
-            # return resp
+            req = Request(environ)
+            environ['req_obj'] = req
+            # 合并原有的响应头
+            def new_start_response(status, headers):
+                tokens = environ.get('tokens')
+                
+                if tokens:
+                    (access_token, refresh_token) = tokens
+                    headers.extend(
+                        [
+                            (
+                                f"Set-Cookie",
+                                f"{ACCESS_COOKIE}={access_token}; HttpOnly; Path=/; Max-Age={JWT_ACCESS_EXPIRE*60}"
+                            ),
+                            (
+                                f"Set-Cookie",
+                                f"{REFRESH_COOKIE}={refresh_token}; HttpOnly; Path=/; Max-Age={JWT_REFERSH_EXPIRE*60}"
+                            )
+                        ]
+                    )
+                return start_response(status, headers)
+            resp = func(environ, new_start_response)
+            
+            return resp
         except BusinessException as be:
             resp = make_response(be.code, be.msg, None)
+            logger.debug(f'BusinessException: {resp}')
         except Exception as e:
             resp = make_response(500, f"服务器内部错误: {str(e)}", None)
-        return resp
+            logger.debug(f'Exception: {resp.decode("utf-8")}')
+            raise e
+        start_response('200 OK', [('Content-Type', 'application/json;charset-utf-8')])
+        return [resp]
     return wrapper
 
 def log_middleware(func):
     def wrapper(environ, start_response):
         start_time = time.time()
-        req = Request(environ)
+        req = environ['req_obj']
         
         logger.info(f"请求 => {req.method} {req.path} | 查询参数: {req.query_params} | 请求体: {req.form_data}")
         

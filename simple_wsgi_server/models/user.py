@@ -37,15 +37,16 @@ class UserModel:
         return None
     
     @classmethod
-    def update_user(cls, userid: int, username: str, role: str):
+    def update_user(cls, userid: int, username: str | None, role: str | None):
         user = cls.get_by_userid(userid)
         
         if user:
-            user_copy = user.copy()
-            user_copy['username'] = username
-            user_copy['role'] = role
+            if username:
+                user['username'] = username
+            if role:
+                user['role'] = role
             
-            return { k: user_copy[k] for k in user_copy if k != 'password' }
+            return { k: user[k] for k in user if k != 'password' }
         return None
             
     @classmethod

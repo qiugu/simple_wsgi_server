@@ -15,7 +15,7 @@ class WsgiApp:
         
     def _create_app(self):
         def wsgi_app(environ, start_response):
-            request = Request(environ=environ)
+            request = environ['req_obj']
             # logger.debug(f"请求参数：{request.__repr__()}")
             response_body = self.router.handle(request)
             
